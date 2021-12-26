@@ -1,0 +1,14 @@
+User,Question-1,UserAnswer,ModelAnswer,Question-2,UserAnswer,ModelAnswer,Question-3,UserAnswer,ModelAnswer,Question-4,UserAnswer,ModelAnswer,Question-5,UserAnswer,ModelAnswer,TimeTAken,Score,Date
+craz,6,b,b,5,a,a,4,c,c,8,d,d,1,a,a,100.0%,2021-11-22 21:02:20.917810
+craz,76,b,b,99,d,d,66,c,c,78,a,a,6,c,b,44.47seconds,80.0%,2021-11-25 17:28:19.267624
+ryana,76,b,b,99,d,d,66,c,c,78,a,a,6,b,b,100.0%,2021-11-26 14:31:45.292260
+Shiba,9,a,a,3,b,b,4,d,d,6,b,b,Whatis8,c,d,156.09seconds,80.0%,2021-11-27 03:25:49.513470
+craz,9,b,a,3,b,b,4,b,d,6,b,b,Whatis8,b,d,17.62seconds,40.0%,2021-11-27 03:34:35.981491
+craz,9,a,a,3,b,b,4,b,d,6,d,b,Whatis8,b,d,30.81seconds,40.0%,2021-11-29 02:30:14.060828
+,9,a,a,3,b,b,4,d,d,6,b,b,Whatis8,d,d,19.69seconds,100.0%,2021-11-29 02:59:52.174886
+craz,9,a,a,3,b,b,4,d,d,6,b,b,Whatis8,d,d,18.82seconds,100.0%,2021-11-29 03:02:31.623660
+craz,9,a,a,3,b,b,4,d,d,6,b,b,Whatis8,d,d,20.63seconds,100.0%,2021-11-29 05:26:02.216516
+craz,9,a,a,3,a,b,4,a,d,6,a,b,Whatis8,a,d,104.08seconds,20.0%,2021-11-29 06:09:47.106248
+
+User,Question-1,UserAnswer,ModelAnswer,Question-2,UserAnswer,ModelAnswer,Question-3,UserAnswer,ModelAnswer,Question-4,UserAnswer,ModelAnswer,Question-5,UserAnswer,ModelAnswer,ElapsedTime,Score,Date
+User,Question-1,UserAnswer,ModelAnswer,Question-2,UserAnswer,ModelAnswer,Question-3,UserAnswer,ModelAnswer,Question-4,UserAnswer,ModelAnswer,Question-5,UserAnswer,ModelAnswer,Question-6,UserAnswer,ModelAnswer,ElapsedTime,Score,Date

@@ -35,6 +35,7 @@ class UserDB():
         #creates the file name
         #if colType == 's':
         #the data will be encoded to base64
+        filename = ''
         if colType == 's':
             data = data.encode('utf-8')
             data = str(base64.b64encode(data))
@@ -43,11 +44,6 @@ class UserDB():
         #the data will be the same as the data, not encoded
         if colType == 'r':
             filename = str(localrowid) + '_' + str(colType) + '_' + str(data)[2:-1]
-            
-            '''
-        else:
-            filename = str(localrowid) + '_' + str(colType) + '_' + str(data)
-            '''
         #creates the file with the file name and data
         #note: the data is stored in the filename and not in the file itself
         with open(path+'/'+filename, 'w+') as f:
@@ -69,9 +65,27 @@ class UserDB():
             date = date.encode('utf-8')
             date = str(base64.b64encode(date))
             data = str(date) + '_' + str(data)
-            filename = str(localrowid) + '_' + str(colType) + '_' + str(data)[2:-1]
+            filename = str(localrowid) + '_' + str(colType) + '_' + str(data)[2:]
         else:
             filename = str(localrowid) + '_' + str(colType) + '_' + str(data)
+        #creates the file with the file name and data
+        with open(path+'/'+filename, 'w+') as f:
+            f.write(str(data))
+        return localrowid
+
+    def createMod(tableName, colName, colType, module, topic, localrowid, data):
+        #gets the path to the table and column
+        path = ('jsonPython/db/' + tableName + '/' + colName)
+        filename = ''
+        #creates the path if it does not exist
+        os.makedirs(path, exist_ok=True)
+        #creates the file name
+        #if colType == 's':
+        #the date and data will be encoded to base64
+        if colType == 'qn':
+            data = data.encode('utf-8')
+            data = str(base64.b64encode(data))
+            filename = str(localrowid) + '_' + str(colType) + '_' + str(module) + '_' + str(topic) + '_' + str(data)[2:-1]
         #creates the file with the file name and data
         with open(path+'/'+filename, 'w+') as f:
             f.write(str(data))
@@ -131,7 +145,7 @@ class UserDB():
                         results.append(file)
         return results
 
-    def update(tableName, colName, colType, localrowid, data):
+    def update(tableName, colName, colType, localrowid, data, modChoice, topicChoice):
         #gets the path to the table and column
         path = ('jsonPython/db/' + tableName + '/' + colName)
         for root, dirs, files in os.walk(path):
@@ -147,11 +161,22 @@ class UserDB():
                         with open(path +'/'+ str(localrowid) + '_' + colType + '_' + str(data), 'w+') as f:
                             f.write(str(data))
                         return data   
+                elif colType == 'qn':
+                    if file.split('_')[0] == str(localrowid):
+                        #if the data is not encoded, the data will be encoded if the colType is 's'
+                        data = data.encode('utf-8')
+                        data = base64.b64encode(data)
+                        data = str(data)[2:-1]
+                        os.remove(path +'/'+ file)
+                        with open(path +'/'+ str(localrowid) + '_' + colType + '_' + str(modChoice) + '_' + str(topicChoice) + '_' + str(data), 'w+') as f:
+                            f.write(str(data))
+                        return data  
                 else:
-                    os.remove(path +'/'+ file)
-                    with open(path +'/'+ str(localrowid) + '_' + colType + '_' + str(data), 'w+') as f:
-                        f.write(str(data))
-                    return data  
+                    if file.split('_')[0] == str(localrowid):
+                        os.remove(path +'/'+ file)
+                        with open(path +'/'+ str(localrowid) + '_' + colType + '_' + str(data), 'w+') as f:
+                            f.write(str(data))
+                        return data  
 
     def delete(tableName, colName):
         #gets the path to the table and column

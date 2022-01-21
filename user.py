@@ -32,6 +32,10 @@ import DBcom
 import time
 # uuid is used to generate a unique session id for the user.
 import uuid
+# hide password when login
+import getpass
+
+import base64
 #############################################################################
 #                                 menu                                      #
 #############################################################################
@@ -263,16 +267,14 @@ def login(localrowid):
     try:
         print('\n<ENTER> to back')
         username = str(input('Please enter your username: '))
-    
         #if there is no username entered.
         if username == '':
             print('+==================================+\n')
             print('Login terminated...\n')
             print('+==================================+\n')
             menu(localrowid)
-
         try:
-            password = str(input('Please enter your password: '))
+            password = getpass.getpass(prompt = 'Please enter your password: ')
 
         except ValueError:
             print(colors.bg.red, 'Please enter a valid password', colors.reset)
@@ -368,25 +370,61 @@ def userResults(localrowid, username):
     print('+==================================+\n')
     print(colors.fg.cyan , '\tUser Results Menu...', colors.reset)
     print('UserID: {}'.format(username))
-    print('+==================================+\n')
-    '''
-    try:
-        userChoice = int(input('> '))
-    except ValueError:
-        doUserQuestions(localrowid, username)
-    '''
+    print('+==================================+')
+    count2 = 0
     i = 1
+    count1 = 0
     usercnt = 0
     localrowid = localrowid[0]
+    modelAns = []
+    List = ['a','b','c','d']
     #Store the results of the user in a list
     userList = DBcom.UserDB.find('users', 'results', 'id','re','raw', '')
+    userAnsList = DBcom.UserDB.find('users', 'userAttAns', 'id','re','raw', '')
+    modelAnsList = DBcom.UserDB.find('questions', 'correctAnswers', 'id','re','raw', '')
+    NumOfQues = DBcom.UserDB.find('questions', 'NumberOfQ', 'id','re','raw', '')
     #find the correct user's results based on the unique userid
+    for ans in modelAnsList:
+        #only keep modelAnsList[2] which is the correct answers
+        modelAns.append(ans.split('_')[2]) 
+        #decode the base64 string to get the actual answers
+        modelAns[count1] = base64.b64decode(modelAns[count1]).decode('utf-8')
+        count1 += 1
+    modelAns = str(modelAns)
+    modelAns = modelAns.replace('[','').replace(']','').replace("'",'')
+    QuestionList = DBcom.UserDB.find('questions', 'questions', 'id','re','raw', '')
+    OptionList = DBcom.UserDB.find('questions', 'options', 'id','re','raw', '')
+    print('Questions: \n')
+    for qn in QuestionList:
+        QuestionList[count2] = qn.split('_')[2]
+        QuestionList[count2] = base64.b64decode(QuestionList[count2]).decode('utf-8')
+        for opt in OptionList:
+            if opt.split('_')[0] == qn.split('_')[0]:
+                OptionList[count2] = opt.split('_')[2]
+                OptionList[count2] = base64.b64decode(OptionList[count2]).decode('utf-8')
+        print('{}. {}'.format(count2+1, QuestionList[count2]))
+        for count3 in range(0, 4):
+            print('{}. {}'.format(List[count3], OptionList[count2].split(',')[count3].strip()))
+            count3+=1
+        count2 += 1
+        print('\n')
+        if count2+1 == str(NumOfQues).split('_')[2]:
+            break
+    print('+==================================+')
+    print('Results: \n')
     for results in userList:
         if localrowid == results.split('_')[0]:
             date = results.split('_')[2]
             date = str(base64.b64decode(date).decode('utf-8'))
             userResult = results.split('_')[3]
             print('{}. {} - {}%'.format(i, date, userResult))
+            for userAns in userAnsList:
+                TakenDate = userAns.split('_')[2]
+                TakenDate = str(base64.b64decode(TakenDate).decode('utf-8'))
+                UserAns = userAns.split('_')[3]
+                if TakenDate == date:
+                    print('User Answer:    {}'.format(UserAns))
+                    print('Correct Answer: {}\n'.format(modelAns))
             i += 1
             usercnt = 1
     #if the user has no results then tell them that they have no results
@@ -526,8 +564,11 @@ def takeQuiz(localrowid, username, count):
                     takeQuiz(localrowid, username, count)
                 if submit == 'y':
                     state = False
-                    print(attCount)
+                    resultListUser = str(resultList)
+                    resultListUser = resultListUser.replace("'","").replace("[","").replace("]","")
+                    DBcom.UserDB.createQn('users', 'userAttAns', 's', localrowid[0], resultListUser)
                     checkAnswer(localrowid, username, resultList, Qnsno, allQns, attCount, count, currentTime)
+                    
                 else:
                     Qnscnt -= 1
                     Qnsid -= 1
@@ -538,7 +579,7 @@ def checkAnswer(localrowid, username, resultList, Qnsno, allQns, attCount, count
     print('+==================================+\n')
     print(colors.fg.cyan, '\tChecking Answer...', colors.reset)
     print('+==================================+\n')
-    localrowid = localrowid[0]
+    
     #declares the variables
     QnsList = []
     correctNum = 0
@@ -573,7 +614,8 @@ def checkAnswer(localrowid, username, resultList, Qnsno, allQns, attCount, count
         print('\nFair. You can do better with more effort.')
     else:
         print('\nGood. Well done.')
-    DBcom.UserDB.createQn('users', 'results', 's', localrowid, percnt)
+    
+    DBcom.UserDB.createQn('users', 'results', 's', localrowid[0], percnt)
     #write percnt and username to results.csv
     #find the total number of questions
     #find the number of questions answered correctly
@@ -668,4 +710,4 @@ class colors:
 		lightgrey='\033[47m'
 
 # IF YOU WANT TO RUN THE USER SCRIPT WITHIN THE USER SCRIPT, UNCOMMENT THE FOLLOWING LINE
-#menu(localrowid = uuid.uuid4())
+menu(localrowid = uuid.uuid4())

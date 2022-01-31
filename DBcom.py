@@ -44,6 +44,10 @@ class UserDB():
         #the data will be the same as the data, not encoded
         if colType == 'r':
             filename = str(localrowid) + '_' + str(colType) + '_' + str(data)[2:-1]
+        if colType == 'result':
+            
+            
+            filename = str(localrowid) + '_' + str(colType) + '_' + str(data)
         #creates the file with the file name and data
         #note: the data is stored in the filename and not in the file itself
         with open(path+'/'+filename, 'w+') as f:
@@ -65,6 +69,16 @@ class UserDB():
             date = date.encode('utf-8')
             date = str(base64.b64encode(date))
             data = str(date) + '_' + str(data)
+            filename = str(localrowid) + '_' + str(colType) + '_' + str(data)[2:]
+        elif colType == 'r':
+            date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            date = date.encode('utf-8')
+            date = str(base64.b64encode(date))
+
+            data = data.encode('utf-8')
+            data = str(base64.b64encode(data))
+
+            data = str(date) + '_' + str(data)[2:-1]
             filename = str(localrowid) + '_' + str(colType) + '_' + str(data)[2:]
         else:
             filename = str(localrowid) + '_' + str(colType) + '_' + str(data)
@@ -122,6 +136,7 @@ class UserDB():
                 if bool(re.match(str(data).replace(" ", ""),str(file_data).replace(" ", ""))):
                     if returnType == 'bool':
                         results.append(True)
+                        
                     elif returnType == 'arr':
                         results.append(str(base64.b64decode(file.split('_')[2]))[2:-1])
                     elif returnType == 'id':
@@ -143,6 +158,7 @@ class UserDB():
                         results.append(file.split('_')[0])
                     else:
                         results.append(file)
+        
         return results
 
     def update(tableName, colName, colType, localrowid, data, modChoice, topicChoice):

@@ -213,6 +213,7 @@ def registerUser(rowid):
     #check if username is already taken
     if len(DBcom.UserDB.find('users', 'username', 'data','' , 'bool', username)) > 0:
         print('Username already taken')
+        registerUser(rowid)
     else:
         username_pass = True
 
@@ -239,6 +240,7 @@ def registerUser(rowid):
             DBcom.UserDB.create('users', 'otp', 's', localrowid, str(otp))
             DBcom.UserDB.create('users', 'email', 's', localrowid, email)
             DBcom.UserDB.create('users', 'AttemptNo', 's', localrowid, str(Attempts))
+            DBcom.UserDB.create('users', 'UserCourses', 's', localrowid, course)
 
             print('+==================================+')
             print('Registration successful,\nreturn to the menu to login!\n')

@@ -2,7 +2,9 @@
 import base64
 import socket
 import sys
+import this
 import threading
+from typing_extensions import Self
 
 import DBcom
 import glob
@@ -118,7 +120,7 @@ class serverFunc():
         return menuid, whatToSend
 
 
-    def login(localrowid):
+    def login(self, localrowid):
         '''
         Purpose of this function is to login the user.
         '''
@@ -139,13 +141,13 @@ class serverFunc():
                 print('+==================================+\n')
                 print('Login terminated...\n')
                 print('+==================================+\n')
-                menu(localrowid)
+                serverFunc.menu(localrowid)
             try:
                 #password
                 password = getpass.getpass(prompt = 'Please enter your password: ')
             except ValueError:
                 print('Please enter a valid password')
-                login(localrowid)
+                self.login(localrowid)
             rowid = DBcom.UserDB.find('users', 'username', 'data','', 'id', username)
             username_pass = DBcom.UserDB.find('users', 'username', 'data','','bool', username)
             password_pass = DBcom.UserDB.find('users', 'password', 'data','','bool', password)
@@ -164,147 +166,148 @@ class serverFunc():
                     print('+==================================+')
                     print('Login successful {}/{}'.format(username,localrowid))
                     print('+==================================+')
+                    #main menu for quiz
                     doUserQuestions(localrowid, username)
                 else :
                     print('a. Incorrect username or password')
-                    login(localrowid)
+                    self.login(localrowid)
             except ValueError:
                 print('b. Incorrect username or password')
-                login(localrowid)
+                self.login(localrowid)
             except IndexError:
                 print('c. Incorrect username or password')
-                login(localrowid)
+                self.login(localrowid)
         except ValueError:
-            login(localrowid)
+            self.login(localrowid)
 
-def registerUser(rowid):
-    '''
-    Purpose of this function is to create a account for the user.
-    '''
-    def generateOTP():
-    #get a random number then hash it to 8 digits
-        randomNumber = os.urandom(16)
-        randomNumber = abs(hash(randomNumber) % (10 ** 8))
-        return randomNumber
-    username_pass = False
-    email_pass = False
-    #acl = '00000'
-    #acl = '11111' #to create admin user
-    #regenerate rowid to ensure each record is unique
-    Attempts = DBcom.UserDB.find('questions', 'NumberOfAtt', 'id', 're','raw','')
-    Attempts = Attempts[0].split('_')[2]
-    localrowid = str(abs(hash(os.urandom(16)) % (10 ** 8)))
-    Courses = DBcom.UserDB.find('users', 'AllCourses', 'id', 're','raw','')
-    print('+==================================+')
-    print('\t     Register User')
-    print('+==================================+')
-    print('Courses:')
-    for i in range(len(Courses)):
-        print('{}. {}'.format(i+1, base64.b64decode(Courses[i].split('_')[2]).decode('utf-8')))
-    print('\n<ENTER> to back')
-    try:
-        course = int(input('Please enter your Course: '))
-    except ValueError:
-        print('Please enter a valid number')
-        registerUser(rowid)
-    if course > len(Courses):
-        print('Please enter a valid number')
-        registerUser(rowid)
-    else:
-        course = base64.b64decode(Courses[course-1].split('_')[2]).decode('utf-8')
-        
-    print('+==================================+')
-    print(colors.fg.cyan, '   Create User / Admin User Menu', colors.reset)
-    print('+==================================+')
-    print('Requirements:')
-    print('1. Username must not contain special characters')
-    print('2. Username/Password must be [4-20] characters')
-    print('3. Password must contain at least one special character [@#$%^&+=]')
-    print('4. Password must contain at least one upper and lower case letter')
-    print('5. Password must contain at least one number [0-9]')
-    print('<b> to back')
-    print('+==================================+')
-    #Username Requirements
-    regUser = "^[a-zA-Z0-9]{4,20}$"
-    patUser = re.compile(regUser)
-    #Password Requirements
-    regPass = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!#%*?&]{4,20}$"
-    patPass = re.compile(regPass)
-    #Check if username is valid
-    username = str(input('Please enter your username: '))
-    if username == 'b':
-        menu(rowid)
-    mat = re.search(patUser, username)
-    if mat:
-        pass
-    else:
-        print('Username is not valid')
-        registerUser(rowid)
-    #if username is empty go back
-    if username == '':
-        menu(rowid)
-    #check if password is valid
-    password = str(input('Please enter your password: '))
-    mat = re.search(patPass, password)
-    if mat:
-        pass
-    else:
-        print('Password is not valid')
-        registerUser(rowid)
-    # ask user to confirm if password is correct
-    password_confirm = str(input('Please confirm your password: '))
-    if password == password_confirm:
-        pass
-    else:
-        print('Password does not match')
-        registerUser(rowid)
-    email = str(input('Please enter your email: '))
-    otp = str(generateOTP())
-
-    #check if username is already taken
-    if len(DBcom.UserDB.find('users', 'username', 'data','' , 'bool', username)) > 0:
-        print('Username already taken')
-        registerUser(rowid)
-    else:
-        username_pass = True
-
-    #check if email is a valid email
-    if re.match(r"[^@]+@[^@]+\.[^@]+", email) == None:
-        print('Email is not valid')
+    def registerUser(self, rowid):
+        '''
+        Purpose of this function is to create a account for the user.
+        '''
+        def generateOTP():
+        #get a random number then hash it to 8 digits
+            randomNumber = os.urandom(16)
+            randomNumber = abs(hash(randomNumber) % (10 ** 8))
+            return randomNumber
+        username_pass = False
         email_pass = False
-    else:
-        email_pass = True
-
-    #check if email is already taken
-    if len(DBcom.UserDB.find('users', 'email', 'data','' ,'bool', email)) > 0:
-        print('Email already taken')
-        email_pass = False
-    else:
-        email_pass = True
-    #if all requirements are met then the user account is created with admin permissions.
-    if username_pass == True and email_pass == True:
+        #acl = '00000'
+        #acl = '11111' #to create admin user
+        #regenerate rowid to ensure each record is unique
+        Attempts = DBcom.UserDB.find('questions', 'NumberOfAtt', 'id', 're','raw','')
+        Attempts = Attempts[0].split('_')[2]
+        localrowid = str(abs(hash(os.urandom(16)) % (10 ** 8)))
+        Courses = DBcom.UserDB.find('users', 'AllCourses', 'id', 're','raw','')
+        print('+==================================+')
+        print('\t     Register User')
+        print('+==================================+')
+        print('Courses:')
+        for i in range(len(Courses)):
+            print('{}. {}'.format(i+1, base64.b64decode(Courses[i].split('_')[2]).decode('utf-8')))
+        print('\n<ENTER> to back')
         try:
-            #get the current number of attempts
-            DBcom.UserDB.create('users', 'acl', 's', localrowid, '00000')
-            DBcom.UserDB.create('users', 'username', 's', localrowid, username)
-            DBcom.UserDB.create('users', 'password', 's', localrowid, password)
-            DBcom.UserDB.create('users', 'otp', 's', localrowid, str(otp))
-            DBcom.UserDB.create('users', 'email', 's', localrowid, email)
-            DBcom.UserDB.create('users', 'AttemptNo', 's', localrowid, str(Attempts))
-            DBcom.UserDB.create('users', 'UserCourses', 's', localrowid, course)
-
-            print('+==================================+')
-            print('Registration successful,\nreturn to the menu to login!\n')
-            print('your email is {}, recovery OTP is {}'.format(email,otp))
-            print('+==================================+\n')
-            
+            course = int(input('Please enter your Course: '))
         except ValueError:
-            print('Error creating user')
-            registerUser(rowid)
-    else:
-        registerUser(rowid)
+            print('Please enter a valid number')
+            self.registerUser(rowid)
+        if course > len(Courses):
+            print('Please enter a valid number')
+            self.registerUser(rowid)
+        else:
+            course = base64.b64decode(Courses[course-1].split('_')[2]).decode('utf-8')
+            
+        print('+==================================+')
+        print('   Create User / Admin User Menu')
+        print('+==================================+')
+        print('Requirements:')
+        print('1. Username must not contain special characters')
+        print('2. Username/Password must be [4-20] characters')
+        print('3. Password must contain at least one special character [@#$%^&+=]')
+        print('4. Password must contain at least one upper and lower case letter')
+        print('5. Password must contain at least one number [0-9]')
+        print('<b> to back')
+        print('+==================================+')
+        #Username Requirements
+        regUser = "^[a-zA-Z0-9]{4,20}$"
+        patUser = re.compile(regUser)
+        #Password Requirements
+        regPass = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!#%*?&]{4,20}$"
+        patPass = re.compile(regPass)
+        #Check if username is valid
+        username = str(input('Please enter your username: '))
+        if username == 'b':
+            serverFunc.menu(rowid)
+        mat = re.search(patUser, username)
+        if mat:
+            pass
+        else:
+            print('Username is not valid')
+            self.registerUser(rowid)
+        #if username is empty go back
+        if username == '':
+            serverFunc.menu(rowid)
+        #check if password is valid
+        password = str(input('Please enter your password: '))
+        mat = re.search(patPass, password)
+        if mat:
+            pass
+        else:
+            print('Password is not valid')
+            self.registerUser(rowid)
+        # ask user to confirm if password is correct
+        password_confirm = str(input('Please confirm your password: '))
+        if password == password_confirm:
+            pass
+        else:
+            print('Password does not match')
+            self.registerUser(rowid)
+        email = str(input('Please enter your email: '))
+        otp = str(generateOTP())
 
-    def forgetPassword(localrowid):
+        #check if username is already taken
+        if len(DBcom.UserDB.find('users', 'username', 'data','' , 'bool', username)) > 0:
+            print('Username already taken')
+            self.registerUser(rowid)
+        else:
+            username_pass = True
+
+        #check if email is a valid email
+        if re.match(r"[^@]+@[^@]+\.[^@]+", email) == None:
+            print('Email is not valid')
+            email_pass = False
+        else:
+            email_pass = True
+
+        #check if email is already taken
+        if len(DBcom.UserDB.find('users', 'email', 'data','' ,'bool', email)) > 0:
+            print('Email already taken')
+            email_pass = False
+        else:
+            email_pass = True
+        #if all requirements are met then the user account is created with admin permissions.
+        if username_pass == True and email_pass == True:
+            try:
+                #get the current number of attempts
+                DBcom.UserDB.create('users', 'acl', 's', localrowid, '00000')
+                DBcom.UserDB.create('users', 'username', 's', localrowid, username)
+                DBcom.UserDB.create('users', 'password', 's', localrowid, password)
+                DBcom.UserDB.create('users', 'otp', 's', localrowid, str(otp))
+                DBcom.UserDB.create('users', 'email', 's', localrowid, email)
+                DBcom.UserDB.create('users', 'AttemptNo', 's', localrowid, str(Attempts))
+                DBcom.UserDB.create('users', 'UserCourses', 's', localrowid, course)
+
+                print('+==================================+')
+                print('Registration successful,\nreturn to the menu to login!\n')
+                print('your email is {}, recovery OTP is {}'.format(email,otp))
+                print('+==================================+\n')
+                
+            except ValueError:
+                print('Error creating user')
+                self.registerUser(rowid)
+        else:
+            self.registerUser(rowid)
+
+    def forgetPassword(self, localrowid):
         '''
         Purpose of this function is to allow the user to recover their password. (Theroeticaly)
         '''
@@ -317,17 +320,17 @@ def registerUser(rowid):
         #check if email is valid
 
         if email == '':
-            menu(localrowid)
+            serverFunc.menu(localrowid)
 
         if re.match(r"[^@]+@[^@]+\.[^@]+", email) == None:
             print('Email is not valid')
-            forgetPassword(localrowid)
+            self.forgetPassword(localrowid)
         else:
             try:
                 localrowid = DBcom.UserDB.find('users', 'email', 'data','', 'id', email)[0]
             except IndexError:
                 print('Email not found')
-                forgetPassword(localrowid)
+                self.forgetPassword(localrowid)
             if len(localrowid) != '':
                 try:
                     #password = str(base64.b64decode(DBcom.UserDB.find('users', 'password', 'id','raw', localrowid[0])[0].split('_')[2]))[1:]
@@ -335,12 +338,12 @@ def registerUser(rowid):
                     print('+==================================+\n')
                     print('We have sent the password {} to your Email {}'.format(password,email))
                     print('+==================================+\n')
-                    menu(localrowid)
+                    serverFunc.menu(localrowid)
                 except:
-                    forgetPassword(localrowid)
+                    self.forgetPassword(localrowid)
             else:
                 print('Email not found')
-                forgetPassword(localrowid)
+                self.forgetPassword(localrowid)
 
 #############################################################################
 #                               functions                                   #

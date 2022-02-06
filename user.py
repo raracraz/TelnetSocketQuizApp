@@ -26,7 +26,6 @@ import re
 import base64
 # datetime is used to get the current date and time
 import datetime
-from threading import local
 # DBcom is the database class that is used to access the filesystem commands.
 import DBcom
 # time is used to get the time taken to complete quiz.
@@ -45,8 +44,6 @@ import socket as s
 #                                 menu                                      #
 #############################################################################
 # open connection to server using socket
-s = s.socket(s.AF_INET, s.SOCK_STREAM)
-s.connect(('localhost', 23))
 #Purpose of this lambda function is to clear terminal after each input
 clearConsole = lambda: os.system('cls')
 

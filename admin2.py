@@ -233,7 +233,6 @@ def registerUser(rowid, fromwhere, acl = '11111'):
         registerUser(rowid, fromwhere)
     else:
         course = base64.b64decode(Courses[course-1].split('_')[2]).decode('utf-8')
-
     
     print('+==================================+')
     print(colors.fg.cyan, '   Create User / Admin User Menu', colors.reset)

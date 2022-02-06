@@ -1,6 +1,7 @@
 
 import base64
 import socket
+import sys
 import threading
 
 import DBcom
@@ -12,10 +13,9 @@ import json
 
 # Global variable that mantain client's connections
 connections = []
-file = ''
 # Variables for the different types of messages\menu
-startMenu = '\n\nYou are Connected to the server, welcome to the Quiz App!\n\n Please choose an option:\n 1. Enter Quiz\n 2. Exit \n ' 
-mainMenu = '\n\n+==================================+\n      Welcome to The Quiz\n ________  ___  ___  ___   ________\n| \  __  \|\  \|\  \|\  \ |\_____  \ \n \ \ \ |\ \ \  \\ \\  \ \  \ \|___/  /|\n  \ \ \ \\\ \ \  \\ \\  \ \  \    /  / / \n   \ \ \_\\\ \ \  \\_\\  \ \  \  /  /_/__\n    \ \_____ \ \_______\ \__\ |\_______\ \n     \|___|\__\|_______|\|__| \|_______|\n          \|__|\n+==================================+\n1. Login\n2. Register\n3. Forget password\n\n<ENTER> to Exit\nPlease select your choice: '
+startMenu = '\n\nYou are Connected to the server, welcome to the Quiz App!\n\n\nEnter any Key to Start...\nEnter <exit> to exit ' 
+mainMenu = '\n\n+==================================+\n      Welcome to The Quiz\n ________  ___  ___  ___   ________\n| \  __  |\  \|\  \|\  \ |\_____  \ \n \ \ \ |\ \ \  \\ \\  \ \  \ \|___/  /|\n  \ \ \ \\\ \ \  \\ \\  \ \  \    /  / / \n   \ \ \_\\\ \ \  \\_\\  \ \  \  /  /_/__\n    \ \_____ \ \_______\ \__\ |\_______\ \n     \|___|\__\|_______|\|__| \|_______|\n          \|__|\n+==================================+\n1. Login\n2. Register\n3. Forget password\n\n<ENTER> to Exit\nPlease select your choice: '
 loginMenu = '+==================================+\n\t     Login Menu\n+==================================+\n\nUsername: '
 forgetPasswordMenu = '+==================================+\n\tForget Password Menu\n+==================================+\n\n<ENTER> to back\nPlease enter your email: '
 registerRequirements = '+==================================+\n\t    Register User\n+==================================+\nRequirements:\n1. Username must not contain special characters\n2. Username/Password must be [4-20] characters\n3. Password must contain at least one special character [@#$%^&+=]\n4. Password must contain at least one upper and lower case letter\n5. Password must contain at least one number [0-9]\n5. Password must contain at least one number [0-9]\n<b> to back\n+==================================+\nPlease enter your Username:'
@@ -53,7 +53,7 @@ def handleUserConnection(connection: socket.socket, address: str) -> None:
         menuState = 0
 
         if menuid == 0:
-            connection.send(formatParser('text',mainMenu,'>', int(theMessage)).encode())
+            connection.send(formatParser('text',mainMenu,'>', 0).encode())
 
         elif menuid == 1: ##LOGIN
             connection.send(formatParser('text',loginMenu,'>', 0).encode())
@@ -61,12 +61,12 @@ def handleUserConnection(connection: socket.socket, address: str) -> None:
 
         elif menuid == 1 and menuState == 1:
             username = theMessage
-            connection.send(formatParser('text','Username: ','>', 0).encode())
+            connection.send(formatParser('text','Username: ','>', 1).encode())
             menuState += 1
 
         elif menuid == 1 and menuState == 2:
             password = theMessage
-            connection.send(formatParser('text','Password: ','>', 0).encode())
+            connection.send(formatParser('text','Password: ','>', 1).encode())
             menuState += 1
 
         elif userlogin == False:
@@ -81,12 +81,12 @@ def handleUserConnection(connection: socket.socket, address: str) -> None:
 
         elif menuid == 2 and menuState == 1:
             username = theMessage
-            connection.send(formatParser('text',registerRequirements,'>', 0).encode())
+            connection.send(formatParser('text',registerRequirements,'>', 2).encode())
             menuState += 1
 
         elif menuid == 2 and menuState == 2:
             password = theMessage
-            connection.send(formatParser('text','Password: ','>', 0).encode())
+            connection.send(formatParser('text','Password: ','>', 2).encode())
             menuState += 1
 
         elif menuid == 2 and menuState == 3:
@@ -136,7 +136,7 @@ def handleUserConnection(connection: socket.socket, address: str) -> None:
 
 
         else:
-            connection.send(formatParser('text',mainMenu,'>', 0).encode())
+            connection.send(formatParser('text', mainMenu,'>', 0).encode())
 
 
     def login() -> str:
@@ -342,7 +342,7 @@ def handleUserConnection(connection: socket.socket, address: str) -> None:
     # upon first connection we send the user the menu
     
     connection.send(formatParser('text', startMenu, '>', 0).encode())
-    
+
     while True:
         try:
             # print menu for the user to choose what to do\
@@ -363,7 +363,121 @@ def handleUserConnection(connection: socket.socket, address: str) -> None:
                         if theMessage == '99':
                             menuid -= 1
 
-                        menu(menuid, theMessage)
+                                
+                        userlogin = False
+                        userRegister = False
+                        forgetPass = False
+                        menuState = 0
+
+                        if menuid == 0:
+                            connection.send(formatParser('text',mainMenu,'>', 0).encode())
+
+                        elif menuid == 1: ##LOGIN
+                            connection.send(formatParser('text',loginMenu,'>', 1).encode())
+                            menuState += 1
+
+                        elif menuid == 1 and menuState == 1:
+                            username = theMessage
+                            username = ""
+                            username_pass = False
+                            if username == '99':
+                                menuid -= 1
+                                menuState = 0
+                                break
+
+                            rowid = DBcom.UserDB.find('users', 'username', 'data','', 'id', username)
+                            username_pass = DBcom.UserDB.find('users', 'username', 'data','','bool', username)
+                            connection.send(formatParser('text','Username: ','>', 1).encode())
+                            menuState += 1
+
+                        elif menuid == 1 and menuState == 2:
+                            password = theMessage
+                            password_pass = DBcom.UserDB.find('users', 'password', 'data','','bool', password)
+                            localrowid = rowid
+                            try:
+            
+                                if len(username_pass) > 0 and len(password_pass) > 0 and localrowid != '':
+                                    menuState = 0
+                                    menuid = 4
+                                else :
+                                    ('a. Incorrect username or password')
+                                    login(localrowid)
+                            except ValueError:
+                                print(colors.fg.red, 'b. Incorrect username or password', colors.reset)
+                                login(localrowid)
+                            except IndexError:
+                                print(colors.fg.red, 'c. Incorrect username or password', colors.reset)
+                                login(localrowid)
+                            connection.send(formatParser('text','Password: ','>', 1).encode())
+                            menuState += 1
+
+                        elif userlogin == False:
+                            connection.send(formatParser('text','Invalid username or password','>', 0).encode())
+                            menuState = 0
+                            menuid = 0
+                        
+                    
+
+                        elif menuid == 2: ##REGISTER
+                            courseChoice = theMessage
+                            connection.send(formatParser('text','+==================================+\n\t    Register User\n+==================================+\nCourses:\n\n{}. {}\n<Enter to back\nPlease enter your Course: >'.format('1', 'Courses'),'>', 0).encode())
+                            menuState += 1
+
+                        elif menuid == 2 and menuState == 1:
+                            username = theMessage
+                            connection.send(formatParser('text',registerRequirements,'>', 2).encode())
+                            menuState += 1
+
+                        elif menuid == 2 and menuState == 2:
+                            password = theMessage
+                            connection.send(formatParser('text','Password: ','>', 2).encode())
+                            menuState += 1
+
+                        elif menuid == 2 and menuState == 3:
+                            confirmPass = theMessage
+                            connection.send(formatParser('text','Confirm Password: ','>', 0).encode())
+                            menuState += 1
+
+                        elif menuid == 2 and menuState == 4:
+                            email = theMessage
+                            connection.send(formatParser('text','Email: ','>', 0).encode())
+                            menuState += 1
+
+                        elif userRegister == False:
+                            connection.send(formatParser('text','Invalid username or password','>', 0).encode())
+                            menuState = 0
+                            menuid = 0
+
+                        elif menuid == 3: ##FORGET PASSWORD
+                            connection.send(formatParser('text',forgetPasswordMenu,'>', 0).encode())
+                            menuState += 1
+
+                        elif forgetPass == False:
+                            connection.send(formatParser('text','Invalid email','>', 0).encode())
+                            menuState = 0
+                            menuid = 0
+
+                        elif menuid == 4: ##doUserMenu
+                            connection.send((formatParser('text','+==================================+\n\tUser Question Menu...\nUserID: {}\n+==================================+\n\n1. Take Quiz\n2. User results\n\n<ENTER> to go back to login page\n(You will be logged out)\n+==================================+\n\nPlease enter your choice:').format('username'), '>', 4+int(theMessage)).encode())
+
+                        elif menuid == 5: ##Quiz
+                            connection.send(formatParser('text', '+==================================+\n             Take Quiz\n+==================================+\n\nDo you want to take a quiz?\n1. Yes\n2. No\n\n<ENTER> to go Back\nPlease enter your choice: ','>', 0).encode())
+                            menuState += 1
+
+                        elif menuid == 5 and menuState == 1:
+                            # MAIN QUIZ LOOP
+                            pass
+
+                        elif menuid == 6: ##View Results
+                            connection.send((formatParser('text', '+==================================+\n             View Results\n+==================================+\nResults: \n\n{}. {}\n\n<ENTER> to go Back\nPlease enter your choice: ').format('i', 'results'),'>', 0).encode())
+                            menuState += 1
+
+                        elif menuid == 6 and menuState == 1:
+                            connection.send((formatParser('text', '+==================================+\n           User Results\n+==================================+\nQuestions: \n\n{}. {}\n\n+==================================+\n           User Results\n+==================================+').format('i', 'results'),'>', 0).encode())
+                            menuid = 4
+
+
+
                         if menuid < 0:
                             connection.send(formatParser('text', 'Goodbye', '>').encode())
                             remove_connection(connection)

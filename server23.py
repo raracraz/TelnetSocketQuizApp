@@ -4,7 +4,7 @@ import socket
 import sys
 import this
 import threading
-
+import pandas as pd
 import DBcom
 import glob
 import os
@@ -34,13 +34,15 @@ class serverFunc():
         forgetPass = False
         menuState = 0
         subMenu = 0
-
+        username = ""
+        password = ""
+        
         if menuid == 0:
             menuid = theMessage
             whatToSend = (formatParser('text',mainMenu,'>', theMessage).encode())
 
         elif menuid == 1: ##LOGIN
-            whatToSend = (formatParser('text',loginMenu,'>', 1).encode())
+            whatToSend = (formatParser('user',loginMenu,'>', 1).encode())
             menuState += 1
 
         elif menuid == 1 and menuState == 1:
@@ -123,7 +125,7 @@ class serverFunc():
         return menuid, whatToSend
 
 
-    def login(self, localrowid, password, username):
+    def login(self, password, username):
         '''
         Purpose of this function is to login the user.
         '''
@@ -160,18 +162,18 @@ class serverFunc():
                     print('Login successful {}/{}'.format(username,localrowid))
                     print('+==================================+')
                     #main menu for quiz
-                    doUserQuestions(localrowid, username)
+                    serverFunc.doUserQuestions(localrowid, username)
                 else :
                     print('a. Incorrect username or password')
-                    self.login(localrowid)
+                    self.login(password, username)
             except ValueError:
                 print('b. Incorrect username or password')
-                self.login(localrowid)
+                self.login(password, username)
             except IndexError:
                 print('c. Incorrect username or password')
-                self.login(localrowid)
+                self.login(password, username)
         except ValueError:
-            self.login(localrowid)
+            self.login(password, username)
 
     def registerUser(self, rowid):
         '''
@@ -337,6 +339,220 @@ class serverFunc():
             else:
                 print('Email not found')
                 self.forgetPassword(localrowid)
+
+    def doUserQuestions(self, localrowid, username):
+        #print(userid)
+        #userid = DBcom.UserDB.find('users', 'username', 'id', 'raw', localrowid)
+        #print(userid)
+        #userid = userid.split('_')[2]
+        #userid = base64.b64decode(userid[0].split('_')[2]).decode('utf-8')
+        #username = DBcom.UserDB.find('users', 'username', 'id', 'id', localrowid)
+        #print(localrowid)
+        #print(userid)
+        print('+==================================+\n')
+        print('\tUser Question Menu...')
+        print('UserID: {}'.format(username))
+        print('+==================================+\n')
+        print('1. Take Quiz')
+        print('2. User results')
+        '''
+        if aclchecker(localrowid[0], 4) == True:
+            print('5. Admin Menu')
+        '''
+        print('\n<ENTER> to go back to login page')
+        print('(You will be logged out)')
+        print('+==================================+\n')
+        try:
+            userChoice = int(input('Please enter your choice: '))
+        except ValueError:
+            serverFunc.menu(localrowid)
+        if userChoice == 1:
+            attCount = DBcom.UserDB.find('users', 'AttemptNo', 'id', 're', 'raw', localrowid[0])
+            attCount = base64.b64decode(attCount[0].split('_')[2]).decode('utf-8')
+            #asks user if they want to take a quiz
+            print('+==================================+')
+            print('             Take Quiz',)
+            print('+==================================+\n')
+            print('\nDo you want to take a quiz?')
+            print('1. Yes')
+            print('2. No')
+            print('\n<ENTER> to go Back')
+            try:
+                choice = int(input('Please enter your choice: '))
+                if choice == 1:
+                    try:
+                        takeQuiz(localrowid, username, '')
+                    except IndexError:
+                        print('You have not been assigned a Module and Topics')
+                        print('\nDo you wish to take a pre-made quiz?\n')
+                        print('Quiz 1: Math - Addition, Subtraction')
+                        print('Quiz 2: ISEC - System Security')
+                        print('\n<ENTER> to go back')
+                        choice = int(input('Please enter your choice: '))
+                        if choice == 1:
+                            takeQuiz(localrowid, username, '1')
+                        elif choice == 2:
+                            takeQuiz(localrowid, username, '2')
+                        self.doUserQuestions(localrowid, username)
+                elif choice == 2:
+                    self.doUserQuestions(localrowid, username)
+                else:
+                    print('Enter a valid choice...')
+                    self.doUserQuestions(localrowid, username)
+            except ValueError:
+                self.doUserQuestions(localrowid, username)
+        elif userChoice == 2:
+            userResults(localrowid, username)
+        else:
+            print('Invalid choice...')
+            self.doUserQuestions(localrowid, username)
+        '''
+        elif userChoice == 5:
+            try:
+                if aclchecker(localrowid[0], 4) == True:
+                    adminMenu(localrowid, username)
+                else:
+                    print('You do not have access to this menu')
+                    menu(localrowid)
+            except ValueError:
+                pass
+        '''
+    def userResults(localrowid, username):
+        '''
+        Purpose of this function is to allow the user to view all the results of the users.
+        '''
+        print('+==================================+')
+        print('         All User Results')
+        print('+==================================+')
+        count2, i = 1, 1
+        count1, usercnt = 0, 0
+        modelAns = []
+        
+        userList = DBcom.UserDB.find('users', 'results', 'id','re','raw', localrowid[0])
+        userAnsList = DBcom.UserDB.find('users', 'userAttAns', 'id','re','raw', '')
+        modelAnsList = DBcom.UserDB.find('questions', 'correctAnswers', 'id','re','raw', '')
+        NumOfQues = DBcom.UserDB.find('questions', 'NumberOfQ', 'id','re','raw', '')
+        '''
+        for ans in modelAnsList:
+            #only keep modelAnsList[2] which is the correct answers
+            modelAns.append(ans.split('_')[2]) 
+            #decode the base64 string to get the actual answers
+            modelAns[count1] = base64.b64decode(modelAns[count1]).decode('utf-8')
+            count1 += 1
+        '''
+        print('Results: \n')
+        #displays the selected users results
+        for results in userList:
+            if localrowid[0] == results.split('_')[0]:
+                date = results.split('_')[2]
+                date = str(base64.b64decode(date).decode('utf-8'))
+                userResult = results.split('_')[3]
+                print('{}. {} - {}%'.format(i, date, userResult))
+                for userAns in userAnsList:
+                    TakenDate = userAns.split('_')[2]
+                    TakenDate = str(base64.b64decode(TakenDate).decode('utf-8'))
+                    UserAns = userAns.split('_')[3]
+                    '''
+                    if TakenDate == date:
+                        while len(modelAns) > len(list(UserAns.split(','))):
+                            modelAns.pop()
+                        
+                        print('User Answer:    {}'.format(UserAns))
+                        print('Correct Answer: {}\n'.format(str(modelAns).replace('[','').replace(']','').replace("'",'')))
+                    '''
+                i += 1
+                usercnt = 1
+        #if the selected users hasnt attempted the quiz then it will display a message
+        if usercnt == 0:
+            print('There are no results for this user...\n')
+            serverFunc.doUserQuestions(localrowid, username)
+        
+        
+        print('<ENTER> to go Back')
+        try:
+            choice = int(input('Please enter your choice: '))
+            userChoice = userList[choice - 1]
+            serverFunc.doUserShowQuestionInResults(localrowid, username, userChoice, UserAns, modelAns, userResult)
+        except ValueError:
+            serverFunc.doUserQuestions(localrowid, username)
+
+        serverFunc.doUserQuestions(localrowid, username)
+
+    def doUserShowQuestionInResults(localrowid, username, userChoice, UserAns, modelAns, userResult):
+        '''
+        Purpose of this function is to allow the admin to view the results of the users.
+        '''
+        print('+==================================+')
+        print('         User Results')
+        print('+==================================+')
+        List = ['a','b','c','d']
+        modelAns = []
+        count, i, anscount = 0, 1, 0
+        # get the question list from the database
+        QuestionList = DBcom.UserDB.find('users', 'userResultQuestionPool', 'id','re','raw', '')
+        # get the option list from the database
+        OptionList = DBcom.UserDB.find('users', 'userResultOptionPool', 'id','re','raw', '')
+        # get the module list from the database
+        ModuleList = DBcom.UserDB.find('users', 'userResultModulePool', 'id','re','raw', '')
+        # get the topic list from the database
+        TopicList = DBcom.UserDB.find('users', 'userResultTopicPool', 'id','re','raw', '')
+        # get the correct answer list from the database
+        CorrectAnswerList = DBcom.UserDB.find('users', 'userResultAnsPool', 'id','re','raw', '')
+        for ans in CorrectAnswerList:
+            #only keep CorrectAnswerList[2] which is the correct answers
+            modelAns.append(base64.b64decode(ans.split('_')[3]).decode('utf-8'))
+        for ans in modelAns:
+            #decode the base64 string to get the actual answers
+            ans = base64.b64decode(ans.split('_')[1]).decode('utf-8')
+            modelAns[anscount] = ans
+            anscount += 1
+
+        print('Questions: \n')
+        DateTaken = base64.b64decode(userChoice.split('_')[2]).decode('utf-8')
+        for qn in QuestionList:
+            if base64.b64decode(qn.split('_')[2]).decode('utf-8') == DateTaken:
+                for mod in ModuleList:
+                    if base64.b64decode(str(mod).split('_')[3]).decode('utf-8').split('_')[0] == base64.b64decode(str(qn).split('_')[3]).decode('utf-8').split('_')[0]:
+                        Module = base64.b64decode(str(mod).split('_')[3]).decode('utf-8').split('_')[1]
+                for top in TopicList:
+                    if base64.b64decode(str(top).split('_')[3]).decode('utf-8').split('_')[0] == base64.b64decode(str(qn).split('_')[3]).decode('utf-8').split('_')[0]:
+                        Topic = base64.b64decode(str(top).split('_')[3]).decode('utf-8').split('_')[1]
+
+                print('ID: {}'.format(i))
+                print('Module: {}'.format(Module.upper()))
+                print('Topic: {}'.format(Topic.upper()))
+                print('Question: {}'.format(base64.b64decode(str(base64.b64decode(qn.split('_')[3]).decode('utf-8')).split('_')[1]).decode('utf-8')))
+
+                for opt in OptionList:
+                    if str(base64.b64decode(qn.split('_')[3]).decode('utf-8')).split('_')[0] == base64.b64decode(opt.split('_')[3]).decode('utf-8').split('_')[0] and base64.b64decode(opt.split('_')[2]).decode('utf-8') == DateTaken:
+                        print('a) {}'.format(base64.b64decode(base64.b64decode(opt.split('_')[3]).decode('utf-8').split('_')[1]).decode('utf-8').replace(' ','').split(',')[0]))
+                        print('b) {}'.format(base64.b64decode(base64.b64decode(opt.split('_')[3]).decode('utf-8').split('_')[1]).decode('utf-8').replace(' ','').split(',')[1]))
+                        print('c) {}'.format(base64.b64decode(base64.b64decode(opt.split('_')[3]).decode('utf-8').split('_')[1]).decode('utf-8').replace(' ','').split(',')[2]))
+                        print('d) {}'.format(base64.b64decode(base64.b64decode(opt.split('_')[3]).decode('utf-8').split('_')[1]).decode('utf-8').replace(' ','').split(',')[3]))
+                print('\n')
+                count += 1
+                i += 1
+
+        UserAns = list(UserAns.replace('[','').replace(']','').replace(",",'').replace(" ",''))
+
+        print('+==================================+')
+        print('         User Result')
+        print('+==================================+')
+        print('Date: {}'.format(DateTaken))
+        print('Result: {}%'.format(userResult))
+        print('\n')
+        # use pandas to compare the users answers with the correct answers horitzontally
+        # if the user answer is correct then the user gets 'correct'
+        # if the user answer is incorrect then the user gets 'incorrect'
+        # index should start at 1
+        df = pd.DataFrame(list(zip(UserAns, modelAns)), columns = ['UserAns', 'ModelAns'])
+        df['Result'] = df.apply(lambda x: 'Correct' if x['UserAns'] == x['ModelAns'] else 'Incorrect', axis=1)
+        df.index += 1
+        print(df)
+        # ask user if they want to print a graph of the results
+        print('\n')
+        input('<ENTER> to go Back ')
+
 
 #############################################################################
 #                               functions                                   #

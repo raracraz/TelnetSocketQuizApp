@@ -90,24 +90,24 @@ class serverFunc():
             menuState = 0
             menuid = 0
 
-        elif menuid == 2 and menuState == 0: ##REGISTER
+        elif menuid == 2 and menuState == 0:  # REGISTER
             print('2')
-            Courses = DBcom.UserDB.find('users', 'AllCourses', 'id', 're','raw','')
-            
+            Courses = DBcom.UserDB.find(
+                'users', 'AllCourses', 'id', 're', 'raw', '')
+
             for i in range(len(Courses)):
-                courses.append(str(int(i)+1) +'.'+ base64.b64decode(Courses[i].split('_')[2]).decode('utf-8'))
+                courses.append(
+                    str(int(i)+1) + '.' + base64.b64decode(Courses[i].split('_')[2]).decode('utf-8'))
             print(courses)
-            
-            course = str(courses).replace("[", "").replace("]", "").replace(",", "\n").replace("'", "").replace(" ", "")
-            
-            whatToSend = (formatParser('text', '+==================================+\n\t    Register User\n+==================================+\nCourses:\n\n{}\n<Enter> to back\nPlease enter your Course: '.format(course),'>', 2).encode())
-            
-            if course > len(Courses):
-                print('Please enter a valid number')
-            else:
-                course = base64.b64decode(Courses[course-1].split('_')[2]).decode('utf-8')
-            
-                menuState += 1
+
+            course = str(courses).replace("[", "").replace("]", "").replace(
+                ",", "\n").replace("'", "").replace(" ", "")
+
+            whatToSend = formatParser(
+                'text', '+==================================+\n\t    Register User\n+==================================+\nCourses:\n\n{}\n<Enter> to back\nPlease enter your Course: '.format(course))
+            print(whatToSend)
+
+            menuState += 1
 
         elif menuid == 2 and menuState == 1:
             print('2-1')
@@ -145,6 +145,12 @@ class serverFunc():
         elif menuid == 3: ##FORGET PASSWORD
             whatToSend = (formatParser('email',forgetPasswordMenu,'>', 3).encode())
             menuState += 1
+
+            if successorfail == True:
+                whatToSend = (formatParser('text',label,'>', 1).encode())
+                menuid = 4
+                menuState = 0
+
 
         elif forgetPass == True:
             whatToSend = (formatParser('text','Invalid email','>', 0).encode())
@@ -311,7 +317,7 @@ class serverFunc():
         else:
             return False, 'Error creating user'
 
-    def forgetPassword(self, localrowid):
+    def forgetPassword(self, localrowid, email):
         '''
         Purpose of this function is to allow the user to recover their password. (Theroeticaly)
         '''
@@ -319,7 +325,6 @@ class serverFunc():
         print('\t  Forget Password')
         print('+==================================+')
         print('\n<ENTER> to back')
-        email = str(input('Please enter your email: '))
         
         #check if email is valid
 
@@ -328,26 +333,26 @@ class serverFunc():
 
         if re.match(r"[^@]+@[^@]+\.[^@]+", email) == None:
             print('Email is not valid')
-            self.forgetPassword(localrowid)
+            return False, 'Invalid email'
         else:
             try:
                 localrowid = DBcom.UserDB.find('users', 'email', 'data','', 'id', email)[0]
             except IndexError:
                 print('Email not found')
-                self.forgetPassword(localrowid)
+                return False, 'Email not found'
             if len(localrowid) != '':
                 try:
                     #password = str(base64.b64decode(DBcom.UserDB.find('users', 'password', 'id','raw', localrowid[0])[0].split('_')[2]))[1:]
                     password = str(DBcom.UserDB.find('users', 'password', 'id','','raw', localrowid)).split('_')[2][0:-2]
-                    print('+==================================+\n')
-                    print('We have sent the password {} to your Email {}'.format(password,email))
-                    print('+==================================+\n')
-                    serverFunc.menu(localrowid)
+                    result = ('+==================================+\n')
+                    result +=('We have sent the password {} to your Email {}'.format(password,email))
+                    result +=('+==================================+\n')
+                    return True, result
                 except:
-                    self.forgetPassword(localrowid)
+                    return False, 'Error sending password'
             else:
                 print('Email not found')
-                self.forgetPassword(localrowid)
+                return False, 'Email not found'
 
     def doUserQuestions(self, localrowid, username):
         #print(userid)
@@ -792,7 +797,7 @@ def handleUserConnection(connection: socket.socket, address: str) -> None:
     
     connection.send(formatParser('text', mainMenu, '>', 0).encode())
     while True:
-        try:
+        #try:
             # print menu for the user to choose what to do\
             # Get client message
             msg = connection.recv(1024).decode()
@@ -824,7 +829,7 @@ def handleUserConnection(connection: socket.socket, address: str) -> None:
                 print('Connection closed')
                 remove_connection(connection)
                 break
-        except Exception as e:
+        #except Exception as e:
             print(f'Error to handle user connection: {e}')
             remove_connection(connection)
             break

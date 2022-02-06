@@ -32,18 +32,13 @@ menuState = 0
 subMenu = 0
 username = ""
 password = ""
-confirmPass = ""
 courses = []
-course = ""
 class serverFunc():
     def menu(menuid, theMessage) -> str:
         menuid = int(menuid)
         global menuState
         global subMenu
         global username
-        global password
-        global confirmPass
-        global course
 
         print('MenuId: {} / MenuState:{}'.format(menuid, menuState))
 
@@ -90,57 +85,37 @@ class serverFunc():
             menuState = 0
             menuid = 0
 
-        elif menuid == 2 and menuState == 0: ##REGISTER
-            print('2')
+        elif menuid == 2: ##REGISTER
             Courses = DBcom.UserDB.find('users', 'AllCourses', 'id', 're','raw','')
-            
             for i in range(len(Courses)):
-                courses.append(str(int(i)+1) +'.'+ base64.b64decode(Courses[i].split('_')[2]).decode('utf-8'))
-            print(courses)
-            
-            course = str(courses).replace("[", "").replace("]", "").replace(",", "\n").replace("'", "").replace(" ", "")
-            
-            whatToSend = (formatParser('text', '+==================================+\n\t    Register User\n+==================================+\nCourses:\n\n{}\n<Enter> to back\nPlease enter your Course: '.format(course),'>', 2).encode())
-            
-            if course > len(Courses):
-                print('Please enter a valid number')
-            else:
-                course = base64.b64decode(Courses[course-1].split('_')[2]).decode('utf-8')
-            
-                menuState += 1
+                courses.append('_' + i+1 +'.'+ base64.b64decode(Courses[i].split('_')[2]).decode('utf-8'))
+            whatToSend = (formatParser('text','+==================================+\n\t    Register User\n+==================================+\nCourses:\n\n{}. {}\n<Enter> to back\nPlease enter your Course: '.format(str(courses).replace("[", "").replace("]", "").replace("_" "\n")),'>', 2).encode())
+            menuState += 1
 
         elif menuid == 2 and menuState == 1:
-            print('2-1')
             username = theMessage
-            whatToSend = (formatParser('regUser',registerRequirements,'>', 2).encode())
+            whatToSend = (formatParser('user',registerRequirements,'>', 2).encode())
             menuState += 1
 
         elif menuid == 2 and menuState == 2:
-            print('2-2')
             password = theMessage
-            whatToSend = (formatParser('regPass','Password: ','>', 2).encode())
+            whatToSend = (formatParser('pass','Password: ','>', 2).encode())
             menuState += 1
 
         elif menuid == 2 and menuState == 3:
-            print('2-3')
             confirmPass = theMessage
-            whatToSend = (formatParser('regPass','Confirm Password: ','>', 2).encode())
+            whatToSend = (formatParser('pass','Confirm Password: ','>', 2).encode())
             menuState += 1
 
         elif menuid == 2 and menuState == 4:
-            print('2-4')
             email = theMessage
-
-            result = serverFunc.registerUser(course, username, password, email)
             whatToSend = (formatParser('email','Email: ','>', 2).encode())
             menuState += 1
-            successorfail = result[0]
-            label = result[1]
 
-            if successorfail == True:
-                whatToSend = (formatParser('text',label,'>', 1).encode())
-                menuid = 4
-                menuState = 0
+        elif userRegister == True:
+            whatToSend = (formatParser('text','Invalid username or password','>', 0).encode())
+            menuState = 0
+            menuid = 0
 
         elif menuid == 3: ##FORGET PASSWORD
             whatToSend = (formatParser('email',forgetPasswordMenu,'>', 3).encode())
@@ -222,7 +197,7 @@ class serverFunc():
         except ValueError:
             return False, 'Invalid username or password'
 
-    def registerUser(self, course, username, password, email):
+    def registerUser(self, rowid):
         '''
         Purpose of this function is to create a account for the user.
         '''
@@ -231,7 +206,6 @@ class serverFunc():
             randomNumber = os.urandom(16)
             randomNumber = abs(hash(randomNumber) % (10 ** 8))
             return randomNumber
-            
         username_pass = False
         email_pass = False
         #acl = '00000'
@@ -246,11 +220,17 @@ class serverFunc():
         print('+==================================+')
         print('Courses:')
         for i in range(len(Courses)):
+            print('{}. {}'.format(i+1, base64.b64decode(Courses[i].split('_')[2]).decode('utf-8')))
             courses.append(i+1 +'.'+ base64.b64decode(Courses[i].split('_')[2]).decode('utf-8'))
         print('\n<ENTER> to back')
+        try:
+            course = int(input('Please enter your Course: '))
+        except ValueError:
+            print('Please enter a valid number')
+            self.registerUser(rowid)
         if course > len(Courses):
             print('Please enter a valid number')
-            return False, 'Invalid course'
+            self.registerUser(rowid)
         else:
             course = base64.b64decode(Courses[course-1].split('_')[2]).decode('utf-8')
             
@@ -266,13 +246,46 @@ class serverFunc():
         print('<b> to back')
         print('+==================================+')
         #Username Requirements
-        
+        regUser = "^[a-zA-Z0-9]{4,20}$"
+        patUser = re.compile(regUser)
+        #Password Requirements
+        regPass = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!#%*?&]{4,20}$"
+        patPass = re.compile(regPass)
+        #Check if username is valid
+        username = str(input('Please enter your username: '))
+        if username == 'b':
+            serverFunc.menu(rowid)
+        mat = re.search(patUser, username)
+        if mat:
+            pass
+        else:
+            print('Username is not valid')
+            self.registerUser(rowid)
+        #if username is empty go back
+        if username == '':
+            serverFunc.menu(rowid)
+        #check if password is valid
+        password = str(input('Please enter your password: '))
+        mat = re.search(patPass, password)
+        if mat:
+            pass
+        else:
+            print('Password is not valid')
+            self.registerUser(rowid)
+        # ask user to confirm if password is correct
+        password_confirm = str(input('Please confirm your password: '))
+        if password == password_confirm:
+            pass
+        else:
+            print('Password does not match')
+            self.registerUser(rowid)
+        email = str(input('Please enter your email: '))
         otp = str(generateOTP())
 
         #check if username is already taken
         if len(DBcom.UserDB.find('users', 'username', 'data','' , 'bool', username)) > 0:
             print('Username already taken')
-            username_pass = False
+            self.registerUser(rowid)
         else:
             username_pass = True
 
@@ -301,15 +314,16 @@ class serverFunc():
                 DBcom.UserDB.create('users', 'AttemptNo', 's', localrowid, str(Attempts))
                 DBcom.UserDB.create('users', 'UserCourses', 's', localrowid, course)
 
-                result = ('+==================================+')
-                result +=('Registration successful,\nreturn to the menu to login!\n')
-                result +=('your email is {}, recovery OTP is {}'.format(email, otp))
-                result +=('+==================================+\n')
-                return True, result
+                print('+==================================+')
+                print('Registration successful,\nreturn to the menu to login!\n')
+                print('your email is {}, recovery OTP is {}'.format(email,otp))
+                print('+==================================+\n')
+                
             except ValueError:
-                return False, 'Error creating user'
+                print('Error creating user')
+                self.registerUser(rowid)
         else:
-            return False, 'Error creating user'
+            self.registerUser(rowid)
 
     def forgetPassword(self, localrowid):
         '''
@@ -411,7 +425,7 @@ class serverFunc():
             except ValueError:
                 self.doUserQuestions(localrowid, username)
         elif userChoice == 2:
-            serverFunc.userResults(localrowid, username)
+            userResults(localrowid, username)
         else:
             print('Invalid choice...')
             self.doUserQuestions(localrowid, username)
@@ -561,208 +575,6 @@ class serverFunc():
         # ask user if they want to print a graph of the results
         print('\n')
         input('<ENTER> to go Back ')
-    
-    def takeQuiz(localrowid, username, preMadeQuiz):
-        '''
-        This function will take the user to the quiz page.
-        It will display the questions and options for the user to answer.
-        '''
-        print('+==================================+\n')
-        print(colors.fg.cyan, '\t     Take Quiz', colors.reset)
-        print('+==================================+\n')
-        #list the question pool
-        resultList, allQnsList, resultQuestionPool = [], [], []
-        #declaring the variables
-        Opt = ['a', 'b', 'c', 'd']
-        state = True
-        forward, question, allOptnum = '', '', ''
-        Qnscnt = 0
-        Qnsid = 1
-        #gets the current time for time taken for the quiz
-        currentTime = time.time()
-
-        #Finds the number of questions in the quiz that the admin has set
-        Qnsno = DBcom.UserDB.find('questions', 'NumberOfQ', 'id', 're','raw','')
-        Qnsno = int(Qnsno[0].split('_')[2])
-
-        #Finds all the questions in the question pool and stores them in a list
-        #note: the questions in this list are encoded
-        allQns = DBcom.UserDB.find('questions', 'questions', 'id','re', 'raw','')
-
-        #Finds all the options in the question pool and stores them in a list
-        alloptions = DBcom.UserDB.find('questions', 'options', 'id', 're','raw','')
-
-        #Finds the number of attempts the admin has set for the quiz
-        attCount1 = DBcom.UserDB.find('questions', 'NumberOfAtt', 'id', 're', 'raw', '')
-        attCount1 = int(attCount1[0].split('_')[2])
-
-        #Finds the number of attempts the user has taken for the quiz
-        attCount = DBcom.UserDB.find('users', 'AttemptNo', 'id', 're', 'raw', localrowid[0])
-        attCount = base64.b64decode(attCount[0].split('_')[2]).decode('utf-8')
-
-        #finds the number of questions set by the admin
-        numberOfQuestions = DBcom.UserDB.find('questions', 'NumberOfQ', 'id', 're', 'raw', '')
-        numberOfQuestions = str(numberOfQuestions[0]).split('_')[2]
-        #print(numberOfQuestions)
-
-        #Get the user's module and topics
-        if preMadeQuiz == '1':
-            userModule = '1__math_addition,subtraction'
-        elif preMadeQuiz == '2':
-            userModule = '2__isec_systemsec'
-        else:
-            userModule = DBcom.UserDB.find('users', 'userQuizCategory', 'id', 're', 'raw', localrowid[0])
-
-        #print(userModule)
-        p = 0
-        topLen = len(str(userModule).split('_')[3].split(','))
-        for i in range(topLen):
-            qnBasedon_Module_Topic = str(userModule).split('_')[2] + '_' + str(userModule).split('_')[3].split(',')[p].replace(']','').replace('[','').replace("'","")
-            for qn in allQns:
-                qnIndex = qn.split('_')[2] + '_' + qn.split('_')[3]
-                if qnBasedon_Module_Topic == qnIndex:
-                    allQnsList.append(qn)
-            p += 1
-        
-        #shuffle the questions
-
-        #If the number of questions in question pool is less then the number of questons the admin set then the admin will be told that there are not enough questions in the question pool
-        allQnscnt = len(allQnsList)
-        if int(Qnsno) > int(allQnscnt):
-            print('Error, there are not enough questions in the pool...')
-            print('Please ask the admin to add more questions...')
-            doUserQuestions(localrowid, username)
-        #Get the current time that the user started the quiz
-        
-        #Check if the user has enough attempts to take the quiz
-        if int(attCount) <= 0:
-            print('You have no attempts left...')
-            doUserQuestions(localrowid, username)
-        
-        #Main loop for the quiz
-        while state == True:
-            #If the user input is 'n' the user will go to the next question
-            if forward == 'n':
-                Qnscnt += 1
-                Qnsid += 1
-            #If the user input is 'p' the user will go to the previous question
-            elif forward == 'p':
-                Qnscnt -= 1
-                Qnsid -=1
-                #If the user is on the first question then they will be told that they are on the first question if 'p' is pressed
-                try:
-                    resultQuestionPool.pop(Qnscnt)
-                    resultQuestionPool.pop(Qnscnt-1)
-                    resultList.pop(Qnscnt)
-                    resultList.pop(Qnscnt-1)
-                except IndexError:
-                    print('Error, you cannot go back on the first question')
-                    Qnscnt += 1
-                    Qnsid += 1
-                    takeQuiz(localrowid, username, preMadeQuiz)
-            #If the user input is 'e' the user will quit the quiz
-            elif forward == 'e':
-                print('Exiting Quiz...')
-                doUserQuestions(localrowid, username)
-            else:
-                try:
-                    resultQuestionPool.pop(Qnscnt)
-                    resultList.pop(Qnscnt)
-                except IndexError:
-                    pass
-
-            #The question displayed will be according to the index in the question List
-            try:
-                question = allQnsList[Qnscnt]
-            except IndexError:
-                pass
-
-            #lets the user know what question they are on
-            print("QuestionID: {}/{}".format(Qnsid, numberOfQuestions))
-            print("Module: {}".format(question.split('_')[2]))
-            print("Topic: {}".format(question.split('_')[3]))
-            #prints the question from the question list decoded
-            print("Question:\n{}".format(base64.b64decode(str(question.split('_')[4])).decode('utf-8')))
-            #prints the options from the option list decoded according to the question's unique id
-
-            for i in range(0, len(alloptions)):
-                allOptnum = alloptions[i]
-                if question.split('_')[0] == str(allOptnum).split('_')[0]:
-                        allOptnum = allOptnum.split('_')[2]
-                        allOptnum = base64.b64decode(str(allOptnum)).decode('utf-8')
-                        allOptnum = allOptnum.split(',')
-                        allOptnum = [x.strip() for x in allOptnum]
-                        print("a) {}".format(str(allOptnum[0])))
-                        print("b) {}".format(str(allOptnum[1])))
-                        print("c) {}".format(str(allOptnum[2])))
-                        print("d) {}".format(str(allOptnum[3])))
-                        print('+==================================+')
-                        print("What is the correct Answer?: ")
-                        print('[a,b,c,d]')
-                        #prompts the user to input their answer in the form of (a,b,c,d)
-                        try:
-                            result = str(input('> ')).lower()
-                            #if the user input is valid then the user will be given the option to go to the next question and answer is stored in a list
-                            if result in Opt:
-                                resultList.append(result)
-                                resultQuestionPool.append(question)
-                                print('Answer saved.')
-                            #if the user input is not in the form of (a,b,c,d) then the user will be told that they have not entered the correct answer
-                            else:
-                                print('Answer not in options')
-                                print('Answer not saved.\n')
-                            #print(len(resultList))
-                            #print(len(resultQuestionPool))
-                            print('+==================================+')
-                            print('[p]revious, [n]ext, [e]xit.[p/n/e]')
-                            try:
-                                forward = str(input('> ')).lower()
-                            except ValueError:
-                                print('Invalid input...')
-                                break
-                        except ValueError:
-                            print('Error, please enter a valid answer')
-                            break
-                #if the number of questions is equals to the current question number then the number of questions in the question pool then the user will be told that they have reached the end of the quiz
-                if Qnsid == int(numberOfQuestions)+1:
-                    print('You have reached the end of the quiz')
-                    print('+==================================+')
-                    print('Summary page:')
-                    #prints the summary page consisting of questions asked and the user's answers
-                    for i in range(0, len(resultList)):
-                        try:
-                            print('Question: {}\nAnswer:{}\n'.format(base64.b64decode(str(allQnsList[i].split('_')[4])).decode('utf-8'), resultList[i]))
-                        except IndexError:
-                            pass
-                    print('+==================================+')
-                    print('[y]es to submit. [p]revious to back.')
-                    #asks the user if they want to submit the quiz
-                    #if the user input is 'y' then the user will be submit the quiz
-                    #if the user input is 'p' then the user will be taken back to the previous question
-                    try:
-                        submit = str(input('> '))
-                    except ValueError:
-                        print('Invalid input...')
-                        takeQuiz(localrowid, username)
-                    if submit == 'y':
-                        clearConsole()
-                        state = False
-                        resultListUser = str(resultList)
-                        resultListUser = resultListUser.replace("'","").replace("[","").replace("]","")
-                        DBcom.UserDB.createQn('users', 'userAttAns', 's', localrowid[0], resultListUser)
-                        attCount = int(attCount)
-                        attCount -= 1
-                        DBcom.UserDB.update('users', 'AttemptNo', 's', localrowid[0], str(attCount), '', '')
-
-                        checkAnswer(localrowid, username, resultList, Qnsno, allQnsList, attCount, currentTime, resultQuestionPool, alloptions)
-                        
-                    else:
-                        Qnscnt -= 1
-                        Qnsid -= 1
-                        resultQuestionPool.pop(Qnscnt)
-                        resultQuestionPool.pop(Qnscnt-1)
-                        resultList.pop(Qnscnt)
-                        resultList.pop(Qnscnt-1)
 
 
 #############################################################################

@@ -12,6 +12,7 @@ import re
 import json
 import getpass
 
+
 # Global variable that mantain client's connections
 connections = []
 # Variables for the different types of messages\menu
@@ -27,77 +28,80 @@ registerRequirements = '+==================================+\n\t    Register Use
 
 class serverFunc():
     def menu(menuid, theMessage) -> str:
-        
+        menuid = int(menuid)
         userlogin = False
         userRegister = False
         forgetPass = False
         menuState = 0
+        subMenu = 0
 
         if menuid == 0:
-            whatToSend = (formatParser('text',mainMenu,'>', 0).encode())
+            menuid = theMessage
+            whatToSend = (formatParser('text',mainMenu,'>', theMessage).encode())
 
         elif menuid == 1: ##LOGIN
-            whatToSend = (formatParser('text',loginMenu,'>', 0).encode())
+            whatToSend = (formatParser('text',loginMenu,'>', 1).encode())
             menuState += 1
 
         elif menuid == 1 and menuState == 1:
             username = theMessage
-            whatToSend = (formatParser('text','Username: ','>', 1).encode())
+            whatToSend = (formatParser('user','Username: ','>', 1).encode())
             menuState += 1
 
         elif menuid == 1 and menuState == 2:
             password = theMessage
-            whatToSend = (formatParser('text','Password: ','>', 1).encode())
+            serverFunc.login(username, password)
+            whatToSend = (formatParser('pass','Password: ','>', 1).encode())
             menuState += 1
 
-        elif userlogin == False:
-            whatToSend = (formatParser('text','Invalid username or password','>', 0).encode())
+        elif userlogin == True:
+            whatToSend = (formatParser('text','Invalid Choice','>', 0).encode())
             menuState = 0
             menuid = 0
 
         elif menuid == 2: ##REGISTER
             courseChoice = theMessage
-            whatToSend = (formatParser('text','+==================================+\n\t    Register User\n+==================================+\nCourses:\n\n{}. {}\n<Enter to back\nPlease enter your Course: >'.format('1', 'Courses'),'>', 0).encode())
+            whatToSend = (formatParser('text','+==================================+\n\t    Register User\n+==================================+\nCourses:\n\n{}. {}\n<Enter> to back\nPlease enter your Course: '.format('1', 'Courses'),'>', 2).encode())
             menuState += 1
 
         elif menuid == 2 and menuState == 1:
             username = theMessage
-            whatToSend = (formatParser('text',registerRequirements,'>', 2).encode())
+            whatToSend = (formatParser('user',registerRequirements,'>', 2).encode())
             menuState += 1
 
         elif menuid == 2 and menuState == 2:
             password = theMessage
-            whatToSend = (formatParser('text','Password: ','>', 2).encode())
+            whatToSend = (formatParser('pass','Password: ','>', 2).encode())
             menuState += 1
 
         elif menuid == 2 and menuState == 3:
             confirmPass = theMessage
-            whatToSend = (formatParser('text','Confirm Password: ','>', 0).encode())
+            whatToSend = (formatParser('pass','Confirm Password: ','>', 2).encode())
             menuState += 1
 
         elif menuid == 2 and menuState == 4:
             email = theMessage
-            whatToSend = (formatParser('text','Email: ','>', 0).encode())
+            whatToSend = (formatParser('email','Email: ','>', 2).encode())
             menuState += 1
 
-        elif userRegister == False:
+        elif userRegister == True:
             whatToSend = (formatParser('text','Invalid username or password','>', 0).encode())
             menuState = 0
             menuid = 0
 
         elif menuid == 3: ##FORGET PASSWORD
-            whatToSend = (formatParser('text',forgetPasswordMenu,'>', 0).encode())
+            whatToSend = (formatParser('email',forgetPasswordMenu,'>', 3).encode())
             menuState += 1
 
-        elif forgetPass == False:
+        elif forgetPass == True:
             whatToSend = (formatParser('text','Invalid email','>', 0).encode())
             menuState = 0
             menuid = 0
 
-        elif menuid == 4: ##doUserMenu
+        elif subMenu == 0: ##doUserMenu
             whatToSend = (formatParser('text','+==================================+\n\tUser Question Menu...\nUserID: {}\n+==================================+\n\n1. Take Quiz\n2. User results\n\n<ENTER> to go back to login page\n(You will be logged out)\n+==================================+\n\nPlease enter your choice:').format('username'), '>', 4+int(theMessage)).encode()
 
-        elif menuid == 5: ##Quiz
+        elif subMenu == 1: ##Quiz
             whatToSend = (formatParser('text', '+==================================+\n             Take Quiz\n+==================================+\n\nDo you want to take a quiz?\n1. Yes\n2. No\n\n<ENTER> to go Back\nPlease enter your choice: ','>', 0).encode())
             menuState += 1
 
@@ -105,13 +109,13 @@ class serverFunc():
             # MAIN QUIZ LOOP
             pass
 
-        elif menuid == 6: ##View Results
+        elif subMenu == 2: ##View Results
             whatToSend = (formatParser('text', '+==================================+\n             View Results\n+==================================+\nResults: \n\n{}. {}\n\n<ENTER> to go Back\nPlease enter your choice: ').format('i', 'results'),'>', 0).encode()
             menuState += 1
 
-        elif menuid == 6 and menuState == 1:
+        elif subMenu == 2 and menuState == 1:
             whatToSend = (formatParser('text', '+==================================+\n           User Results\n+==================================+\nQuestions: \n\n{}. {}\n\n+==================================+\n           User Results\n+==================================+').format('i', 'results'),'>', 0).encode()
-            menuid = 4
+            subMenu = 0
 
         else:
             whatToSend = (formatParser('text', mainMenu,'>', 0).encode())
@@ -119,7 +123,7 @@ class serverFunc():
         return menuid, whatToSend
 
 
-    def login(self, localrowid):
+    def login(self, localrowid, password, username):
         '''
         Purpose of this function is to login the user.
         '''
@@ -134,19 +138,9 @@ class serverFunc():
             
         try:
             print('\n<ENTER> to back')
-            username = str(input('Please enter your username: '))
+            
             #if there is no username entered.
-            if username == '':
-                print('+==================================+\n')
-                print('Login terminated...\n')
-                print('+==================================+\n')
-                serverFunc.menu(localrowid)
-            try:
-                #password
-                password = getpass.getpass(prompt = 'Please enter your password: ')
-            except ValueError:
-                print('Please enter a valid password')
-                self.login(localrowid)
+            
             rowid = DBcom.UserDB.find('users', 'username', 'data','', 'id', username)
             username_pass = DBcom.UserDB.find('users', 'username', 'data','','bool', username)
             password_pass = DBcom.UserDB.find('users', 'password', 'data','','bool', password)
@@ -348,8 +342,8 @@ class serverFunc():
 #                               functions                                   #
 #############################################################################
 
-def formatParser(theType,theMessage,thePrompt='>', menuid = 0, minLength=1,maxLength=512,minVal=1,maxVal=99,mask='*'):
-    jsonStr = {'type': theType, 'message': theMessage, 'prompt': thePrompt, 'minLength': minLength, 'maxLength': maxLength, 'minVal': minVal, 'maxVal': maxVal, 'mask': mask, 'menuid': menuid}
+def formatParser(theType, theMessage,thePrompt='>', menuid = 0, minLength=1,maxLength=512,minVal=1,maxVal=99):
+    jsonStr = {'type': theType, 'message': theMessage, 'prompt': thePrompt, 'minLength': minLength, 'maxLength': maxLength, 'minVal': minVal, 'maxVal': maxVal,'menuid': menuid}
     return json.dumps(jsonStr)
 
 def receiveParser(data):
@@ -369,7 +363,7 @@ def handleUserConnection(connection: socket.socket, address: str) -> None:
     '''
     # upon first connection we send the user the menu
     
-    connection.send(formatParser('text', startMenu, '>', 0).encode())
+    connection.send(formatParser('text', mainMenu, '>', 0).encode())
     while True:
         try:
             # print menu for the user to choose what to do\
@@ -386,16 +380,23 @@ def handleUserConnection(connection: socket.socket, address: str) -> None:
                         jsonData = receiveParser(msg)
                         menuid = jsonData['menuid']
                         theMessage = jsonData['message']
-                        if theMessage == '99':
-                            menuid -= 1
+                        
 
-                        connection.send(serverFunc.menu(menuid, theMessage, connection, address).encode())
+                        if int(menuid) < 0:
+                            print('Goodnight...')
+                            remove_connection(connection)
+                            break
+                        connection.send(serverFunc.menu(menuid, theMessage)[1])
                     else:
                         print('Message is not ascii')
                         pass
                 except UnicodeDecodeError:
                     print('skipping non-ascii message')
                     pass
+            else:
+                print('Connection closed')
+                remove_connection(connection)
+                break
         except Exception as e:
             print(f'Error to handle user connection: {e}')
             remove_connection(connection)
@@ -440,7 +441,7 @@ def server() -> None:
         to handle their messages
     '''
 
-    LISTENING_PORT = 99
+    LISTENING_PORT = 3000
 
     try:
         # Create server and specifying that it can only handle 4 connections by time!
